@@ -1,15 +1,15 @@
 import React from "react";
 import axios from "axios";
 import { Routes, Route } from "react-router-dom";
+
 import Header from "./components/Header";
 import Drawer from "./components/Drawer";
+
 import Home from "./pages/Home";
 import Favorites from "./pages/Favorites";
-import AppContext from "./context";
+import Orders from "./pages/Orders";
 
-// axios.get('https://60d62397943aa60017768e77.mockapi.io/cart'),
-// axios.get('https://60d62397943aa60017768e77.mockapi.io/favorites'),
-// axios.get('https://60d62397943aa60017768e77.mockapi.io/items')
+import AppContext from "./context";
 
 function App() {
 	React.useEffect(() => {
@@ -18,18 +18,24 @@ function App() {
 		// 	.then((json) => setItems(json));
 
 		async function fetchData() {
-			setIsLoading(true);
-			const cartResponse = await axios.get("https://60d62397943aa60017768e77.mockapi.io/cart");
-			const favoritesResposne = await axios.get(
-				"https://6349bcf25df95285140699c7.mockapi.io/favorites"
-			);
-			const itemsResponse = await axios.get("https://60d62397943aa60017768e77.mockapi.io/items");
+			try {
+				setIsLoading(true);
 
-			setIsLoading(false);
+				const [cartResponse, favoritesResposne, itemsResponse] = await Promise.all([
+					axios.get("https://6349bcf25df95285140699c7.mockapi.io/cart"),
+					axios.get("https://6349bcf25df95285140699c7.mockapi.io/favorites"),
+					axios.get("https://60d62397943aa60017768e77.mockapi.io/items"),
+				]);
 
-			setCartItems(cartResponse.data);
-			setFavoriteItems(favoritesResposne.data);
-			setItems(itemsResponse.data);
+				setIsLoading(false);
+
+				setCartItems(cartResponse.data);
+				setFavoriteItems(favoritesResposne.data);
+				setItems(itemsResponse.data);
+			} catch (error) {
+				alert("ошибка при запросе данных");
+				console.error(error);
+			}
 		}
 		fetchData();
 	}, []);
@@ -41,14 +47,30 @@ function App() {
 	const [cartOpened, setCartOpened] = React.useState(false);
 	const [isLoading, setIsLoading] = React.useState(true);
 
-	const addCartItems = (obj) => {
-		console.log(obj);
-		if (cartItems.find((item) => Number(item.id) === Number(obj.id))) {
-			axios.delete(`https://60d62397943aa60017768e77.mockapi.io/cart/${obj.id}`);
-			setCartItems((prev) => prev.filter((item) => item.id !== obj.id));
-		} else {
-			axios.post("https://60d62397943aa60017768e77.mockapi.io/cart", obj);
-			setCartItems((prev) => [...prev, obj]);
+	const addCartItems = async (obj) => {
+		try {
+			const findItem = cartItems.find((item) => Number(item.parentId) === Number(obj.id));
+			if (findItem) {
+				setCartItems((prev) => prev.filter((item) => item.parentId !== obj.id));
+				await axios.delete(`https://6349bcf25df95285140699c7.mockapi.io/cart/${findItem.id}`);
+			} else {
+				setCartItems((prev) => [...prev, obj]);
+				const { data } = await axios.post("https://6349bcf25df95285140699c7.mockapi.io/cart", obj);
+				setCartItems((prev) =>
+					prev.map((item) => {
+						if (item.parentId === data.parentId) {
+							return {
+								...item,
+								id: data.id,
+							};
+						}
+						return item;
+					})
+				);
+			}
+		} catch (error) {
+			alert("Ошибка при добавлении в корзину");
+			console.error(error);
 		}
 	};
 
@@ -66,12 +88,18 @@ function App() {
 			}
 		} catch (error) {
 			alert("не удалось добавить в фавориты");
+			console.log(error);
 		}
 	};
 
-	const deleteCartItems = (currentId) => {
-		axios.delete(`https://60d62397943aa60017768e77.mockapi.io/cart/${currentId}`);
-		setCartItems((prev) => prev.filter((obj) => obj.id !== currentId));
+	const deleteCartItems = async (currentId) => {
+		try {
+			axios.delete(`https://6349bcf25df95285140699c7.mockapi.io/cart/${currentId}`);
+			setCartItems((prev) => prev.filter((obj) => obj.id !== currentId));
+		} catch (error) {
+			alert("Ошибка при удалении из корзины");
+			console.log(error);
+		}
 	};
 
 	const onChangeValue = (event) => {
@@ -79,10 +107,24 @@ function App() {
 	};
 
 	const hasItemAdded = (id) => {
-		return cartItems.some((item) => Number(item.id) === Number(id));
+		return cartItems.some((item) => Number(item.parentId) === Number(id));
 	};
 	return (
-		<AppContext.Provider value={{ items, cartItems, favoriteItems, hasItemAdded }}>
+		<AppContext.Provider
+			value={{
+				items,
+				cartItems,
+				favoriteItems,
+				hasItemAdded,
+				setCartOpened,
+				setCartItems,
+				addCartItems,
+				isLoading,
+				setIsLoading,
+				deleteCartItems,
+				cartOpened,
+			}}
+		>
 			<>
 				<div className="wrapper clear">
 					<Header onClickCart={() => setCartOpened(true)} />
@@ -107,16 +149,16 @@ function App() {
 						<Route
 							path="/favorites"
 							element={<Favorites addFavoriteItems={addFavoriteItems} />}
+							exact
+						></Route>
+						<Route
+							path="/orders"
+							element={<Orders addFavoriteItems={addFavoriteItems} />}
+							exact
 						></Route>
 					</Routes>
 				</div>
-				{cartOpened && (
-					<Drawer
-						items={cartItems}
-						onRemove={deleteCartItems}
-						onClose={() => setCartOpened(false)}
-					/>
-				)}
+				<Drawer items={cartItems} onRemove={deleteCartItems} onClose={() => setCartOpened(false)} />
 			</>
 		</AppContext.Provider>
 	);

@@ -5,6 +5,7 @@ import styles from "./Card.module.scss";
 
 const Card = ({
 	id,
+	parentId,
 	title,
 	price,
 	imageUrl,
@@ -15,12 +16,13 @@ const Card = ({
 }) => {
 	const { hasItemAdded } = React.useContext(AppContext);
 	const [isFavotie, setIsFavotie] = React.useState(favorited);
+	const obj = { id, parentId: id, title, imageUrl, price };
 
 	const onClickPlus = () => {
-		onPlus();
+		onPlus(obj);
 	};
 	const onClickFavorite = () => {
-		onFavorite(id);
+		onFavorite(obj);
 		setIsFavotie(!isFavotie);
 	};
 	return (
@@ -42,15 +44,17 @@ const Card = ({
 				</ContentLoader>
 			) : (
 				<>
-					<div className={styles.favorite}>
-						<img
-							onClick={onClickFavorite}
-							width={32}
-							height={32}
-							src={isFavotie ? "/img/heart-liked.svg" : "/img/heart-unliked.svg"}
-							alt="unliked-ico"
-						/>
-					</div>
+					{onFavorite && (
+						<div className={styles.favorite}>
+							<img
+								onClick={onClickFavorite}
+								width={32}
+								height={32}
+								src={isFavotie ? "/img/heart-liked.svg" : "/img/heart-unliked.svg"}
+								alt="unliked-ico"
+							/>
+						</div>
+					)}
 					<img width={133} height={112} src={imageUrl} alt="sneakers-img" />
 					<p>{title}</p>
 					<div className="d-flex justify-between align-center">
@@ -58,12 +62,14 @@ const Card = ({
 							<span>Цена:</span>
 							<b>{price} руб.</b>
 						</div>
-						<img
-							className={styles.plus}
-							onClick={onClickPlus}
-							src={hasItemAdded(id) ? "/img/btn-checked.svg" : "/img/btn-plus.svg"}
-							alt="add-img"
-						/>
+						{onPlus && (
+							<img
+								className={styles.plus}
+								onClick={onClickPlus}
+								src={hasItemAdded(id) ? "/img/btn-checked.svg" : "/img/btn-plus.svg"}
+								alt="add-img"
+							/>
+						)}
 					</div>
 				</>
 			)}

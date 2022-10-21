@@ -20,7 +20,7 @@ const Home = ({
 				{...obj}
 				key={index}
 				loading={isLoading}
-				onPlus={() => addCartItems(obj)}
+				onPlus={(obj) => addCartItems(obj)}
 				onFavorite={() => addFavoriteItems(obj)}
 				onDelete={() => deleteCartItems(obj.id)}
 			/>
