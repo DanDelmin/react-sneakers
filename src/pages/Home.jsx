@@ -32,7 +32,7 @@ const Home = ({
 			<div className="d-flex align-center justify-between">
 				<h1>{searchValue ? `Поиск по запросу '${searchValue}'` : "Все кроссовки"}</h1>
 				<div className="search-block d-flex align-center">
-					<img className="mr-15" width={14} height={14} alt="search-ico" src="/img/search.svg" />
+					<img className="mr-15" width={14} height={14} alt="search-ico" src="img/search.svg" />
 					<input
 						className="search-block__input"
 						type="text"
